@@ -214,7 +214,9 @@ class PassengerServiceTest {
         updateRequest.setPhoneNumber("9876543210");
 
         when(passengerRepository.findById(1L)).thenReturn(Optional.of(passenger));
+        when(passengerRepository.existsByEmail(anyString())).thenReturn(false);
         when(passengerRepository.save(any(Passenger.class))).thenReturn(passenger);
+        doNothing().when(modelMapper).map(any(PassengerRequestDto.class), any(Passenger.class));
         when(modelMapper.map(any(Passenger.class), eq(PassengerResponseDto.class))).thenReturn(passengerResponse);
 
         // When
@@ -246,15 +248,15 @@ class PassengerServiceTest {
     @DisplayName("Should successfully delete a passenger")
     void testDeletePassenger_Success() {
         // Given
-        when(passengerRepository.findById(1L)).thenReturn(Optional.of(passenger));
-        doNothing().when(passengerRepository).delete(any(Passenger.class));
+        when(passengerRepository.existsById(1L)).thenReturn(true);
+        doNothing().when(passengerRepository).deleteById(1L);
 
         // When
         passengerService.deletePassenger(1L);
 
         // Then
-        verify(passengerRepository).findById(1L);
-        verify(passengerRepository).delete(passenger);
+        verify(passengerRepository).existsById(1L);
+        verify(passengerRepository).deleteById(1L);
     }
 
     @Test

@@ -232,6 +232,7 @@ class AirportServiceTest {
 
         when(airportRepository.findById(1L)).thenReturn(Optional.of(airport));
         when(airportRepository.save(any(Airport.class))).thenReturn(airport);
+        doNothing().when(modelMapper).map(any(AirportRequestDto.class), any(Airport.class));
         when(modelMapper.map(any(Airport.class), eq(AirportResponseDto.class))).thenReturn(airportResponse);
 
         // When

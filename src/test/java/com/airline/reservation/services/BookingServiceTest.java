@@ -289,12 +289,27 @@ class BookingServiceTest {
         Booking booking = new Booking();
         booking.setId(1L);
         booking.setStatus(Booking.BookingStatus.PENDING);
+        booking.setFlight(flight);
+        booking.setPassenger(passenger);
         booking.setSeat(seat);
         seat.setStatus(Seat.SeatStatus.RESERVED);
+
+        BookingResponseDto bookingResponse = new BookingResponseDto();
+        bookingResponse.setId(1L);
 
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(seatRepository.save(any(Seat.class))).thenReturn(seat);
         when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
+        
+        // Mock modelMapper for convertToResponseDto
+        com.airline.reservation.dtos.PassengerResponseDto passengerDto = new com.airline.reservation.dtos.PassengerResponseDto();
+        com.airline.reservation.dtos.SeatResponseDto seatDto = new com.airline.reservation.dtos.SeatResponseDto();
+        com.airline.reservation.dtos.AirportResponseDto airportDto = new com.airline.reservation.dtos.AirportResponseDto();
+        
+        when(modelMapper.map(eq(passenger), eq(com.airline.reservation.dtos.PassengerResponseDto.class))).thenReturn(passengerDto);
+        when(modelMapper.map(eq(seat), eq(com.airline.reservation.dtos.SeatResponseDto.class))).thenReturn(seatDto);
+        when(modelMapper.map(eq(departureAirport), eq(com.airline.reservation.dtos.AirportResponseDto.class))).thenReturn(airportDto);
+        when(modelMapper.map(eq(arrivalAirport), eq(com.airline.reservation.dtos.AirportResponseDto.class))).thenReturn(airportDto);
 
         // When
         BookingResponseDto result = bookingService.confirmBooking(1L);

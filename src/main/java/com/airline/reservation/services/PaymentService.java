@@ -10,7 +10,6 @@ import com.airline.reservation.models.Payment;
 import com.airline.reservation.repositories.BookingRepository;
 import com.airline.reservation.repositories.PaymentRepository;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +27,6 @@ public class PaymentService {
     
     private final PaymentRepository paymentRepository;
     private final BookingRepository bookingRepository;
-    private final ModelMapper modelMapper;
     
     @Transactional
     public PaymentResponseDto processPayment(PaymentRequestDto requestDto) {
