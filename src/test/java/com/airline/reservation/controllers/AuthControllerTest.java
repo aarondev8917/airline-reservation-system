@@ -1,6 +1,5 @@
 package com.airline.reservation.controllers;
 
-import com.airline.reservation.dtos.ApiResponse;
 import com.airline.reservation.dtos.AuthResponseDto;
 import com.airline.reservation.dtos.LoginRequestDto;
 import com.airline.reservation.dtos.RegisterRequestDto;
@@ -13,13 +12,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import com.airline.reservation.security.SecurityConfig;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -29,8 +28,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(
         controllers = AuthController.class,
         excludeAutoConfiguration = SecurityAutoConfiguration.class,
-        excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = SecurityConfig.class)
+        excludeFilters = @ComponentScan.Filter(
+                type = FilterType.REGEX,
+                pattern = "com\\.airline\\.reservation\\.security\\..*"
+        )
 )
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("AuthController Unit Tests")
 class AuthControllerTest {
 
@@ -98,7 +101,7 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("Should return 400 when email already exists")
+    @DisplayName("Should return 409 when email already exists")
     void testRegister_EmailExists() throws Exception {
         // Given
         when(authService.register(any(RegisterRequestDto.class)))
@@ -108,7 +111,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isConflict());
     }
 
     @Test

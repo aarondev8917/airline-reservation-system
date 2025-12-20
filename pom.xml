@@ -119,6 +119,7 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                    <!-- Note: ModelMapper warnings about sun.misc.Unsafe are harmless and come from the library itself -->
                 </configuration>
             </plugin>
             <plugin>
@@ -128,6 +129,8 @@
                 <configuration>
                     <source>21</source>
                     <target>21</target>
+                    <release>21</release>
+                    <encoding>UTF-8</encoding>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.projectlombok</groupId>
@@ -135,15 +138,27 @@
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                    <fork>true</fork>
+                    <executable>${java.home}/bin/javac</executable>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.1.2</version>
                 <configuration>
                     <forkCount>1</forkCount>
                     <reuseForks>false</reuseForks>
-                    <argLine>-Djdk.version=21</argLine>
+                    <!-- Force Java 21 for tests to avoid Mockito/ByteBuddy compatibility issues with Java 24 -->
+                    <!-- Note: Make sure JAVA_HOME points to Java 21 before running tests -->
+                    <!-- ModelMapper sun.misc.Unsafe warnings: These are harmless JVM-level warnings -->
+                    <!-- from ModelMapper 3.1.1 using deprecated internal APIs. Cannot be fully suppressed. -->
+                    <!-- See MODELLMAPPER_WARNINGS.md for details -->
+                    <!-- Suppress class data sharing warning by explicitly disabling CDS -->
+                    <argLine>-XX:+EnableDynamicAgentLoading --add-opens java.base/java.lang=ALL-UNNAMED -Xshare:off</argLine>
+                    <environmentVariables>
+                        <JAVA_HOME>${java.home}</JAVA_HOME>
+                    </environmentVariables>
                 </configuration>
             </plugin>
         </plugins>

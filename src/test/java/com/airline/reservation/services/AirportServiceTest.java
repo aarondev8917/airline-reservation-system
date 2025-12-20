@@ -32,10 +32,10 @@ class AirportServiceTest {
     @Mock
     private AirportRepository airportRepository;
 
-    @Mock
+    // ModelMapper is no longer mocked, using a real instance
     private ModelMapper modelMapper;
 
-    @InjectMocks
+    // @InjectMocks is removed as we are manually creating the service
     private AirportService airportService;
 
     private AirportRequestDto airportRequest;
@@ -44,6 +44,11 @@ class AirportServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Use real ModelMapper instead of mocking (avoids Java 24 compatibility issues)
+        modelMapper = new ModelMapper();
+
+        // Since @InjectMocks won't work with a real instance, we'll create the service manually
+        airportService = new AirportService(airportRepository, modelMapper);
         airportRequest = new AirportRequestDto();
         airportRequest.setCode("JFK");
         airportRequest.setName("John F. Kennedy International Airport");
@@ -70,9 +75,11 @@ class AirportServiceTest {
     void testCreateAirport_Success() {
         // Given
         when(airportRepository.existsByCode(anyString())).thenReturn(false);
-        when(modelMapper.map(any(AirportRequestDto.class), eq(Airport.class))).thenReturn(airport);
-        when(airportRepository.save(any(Airport.class))).thenReturn(airport);
-        when(modelMapper.map(any(Airport.class), eq(AirportResponseDto.class))).thenReturn(airportResponse);
+        when(airportRepository.save(any(Airport.class))).thenAnswer(invocation -> {
+            Airport a = invocation.getArgument(0);
+            a.setId(1L); // Set ID to match expected response
+            return a;
+        });
 
         // When
         AirportResponseDto result = airportService.createAirport(airportRequest);
@@ -90,13 +97,12 @@ class AirportServiceTest {
         // Given
         airportRequest.setCode("jfk"); // lowercase
         when(airportRepository.existsByCode("JFK")).thenReturn(false);
-        when(modelMapper.map(any(AirportRequestDto.class), eq(Airport.class))).thenReturn(airport);
         when(airportRepository.save(any(Airport.class))).thenAnswer(invocation -> {
             Airport a = invocation.getArgument(0);
             assertEquals("JFK", a.getCode()); // Should be uppercase
+            a.setId(1L);
             return a;
         });
-        when(modelMapper.map(any(Airport.class), eq(AirportResponseDto.class))).thenReturn(airportResponse);
 
         // When
         airportService.createAirport(airportRequest);
@@ -125,7 +131,6 @@ class AirportServiceTest {
     void testGetAirportById_Success() {
         // Given
         when(airportRepository.findById(1L)).thenReturn(Optional.of(airport));
-        when(modelMapper.map(any(Airport.class), eq(AirportResponseDto.class))).thenReturn(airportResponse);
 
         // When
         AirportResponseDto result = airportService.getAirportById(1L);
@@ -153,7 +158,6 @@ class AirportServiceTest {
     void testGetAirportByCode_Success() {
         // Given
         when(airportRepository.findByCode("JFK")).thenReturn(Optional.of(airport));
-        when(modelMapper.map(any(Airport.class), eq(AirportResponseDto.class))).thenReturn(airportResponse);
 
         // When
         AirportResponseDto result = airportService.getAirportByCode("JFK");
@@ -168,7 +172,6 @@ class AirportServiceTest {
     void testGetAirportByCode_CodeUpperCase() {
         // Given
         when(airportRepository.findByCode("JFK")).thenReturn(Optional.of(airport));
-        when(modelMapper.map(any(Airport.class), eq(AirportResponseDto.class))).thenReturn(airportResponse);
 
         // When
         airportService.getAirportByCode("jfk"); // lowercase input
@@ -191,8 +194,6 @@ class AirportServiceTest {
 
         List<Airport> airports = Arrays.asList(airport, airport2);
         when(airportRepository.findAll()).thenReturn(airports);
-        when(modelMapper.map(airport, AirportResponseDto.class)).thenReturn(airportResponse);
-        when(modelMapper.map(airport2, AirportResponseDto.class)).thenReturn(response2);
 
         // When
         List<AirportResponseDto> result = airportService.getAllAirports();
@@ -209,7 +210,6 @@ class AirportServiceTest {
         // Given
         List<Airport> airports = Arrays.asList(airport);
         when(airportRepository.findByCity("New York")).thenReturn(airports);
-        when(modelMapper.map(airport, AirportResponseDto.class)).thenReturn(airportResponse);
 
         // When
         List<AirportResponseDto> result = airportService.getAirportsByCity("New York");
@@ -231,9 +231,10 @@ class AirportServiceTest {
         updateRequest.setCountry("USA");
 
         when(airportRepository.findById(1L)).thenReturn(Optional.of(airport));
-        when(airportRepository.save(any(Airport.class))).thenReturn(airport);
-        doNothing().when(modelMapper).map(any(AirportRequestDto.class), any(Airport.class));
-        when(modelMapper.map(any(Airport.class), eq(AirportResponseDto.class))).thenReturn(airportResponse);
+        when(airportRepository.save(any(Airport.class))).thenAnswer(invocation -> {
+            Airport a = invocation.getArgument(0);
+            return a; // Return the updated airport
+        });
 
         // When
         AirportResponseDto result = airportService.updateAirport(1L, updateRequest);

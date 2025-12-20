@@ -10,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -33,10 +32,7 @@ class PassengerServiceTest {
     @Mock
     private PassengerRepository passengerRepository;
 
-    @Mock
     private ModelMapper modelMapper;
-
-    @InjectMocks
     private PassengerService passengerService;
 
     private PassengerRequestDto passengerRequest;
@@ -45,6 +41,13 @@ class PassengerServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Use real ModelMapper instead of mocking (avoids Java 24 compatibility issues)
+        modelMapper = new ModelMapper();
+        
+        // Set the ModelMapper on the service using reflection or create service manually
+        // Since @InjectMocks won't work with a real instance, we'll create the service manually
+        passengerService = new PassengerService(passengerRepository, modelMapper);
+        
         passengerRequest = new PassengerRequestDto();
         passengerRequest.setFirstName("John");
         passengerRequest.setLastName("Doe");
@@ -77,9 +80,7 @@ class PassengerServiceTest {
         // Given
         when(passengerRepository.existsByEmail(anyString())).thenReturn(false);
         when(passengerRepository.existsByPassportNumber(anyString())).thenReturn(false);
-        when(modelMapper.map(any(PassengerRequestDto.class), eq(Passenger.class))).thenReturn(passenger);
         when(passengerRepository.save(any(Passenger.class))).thenReturn(passenger);
-        when(modelMapper.map(any(Passenger.class), eq(PassengerResponseDto.class))).thenReturn(passengerResponse);
 
         // When
         PassengerResponseDto result = passengerService.createPassenger(passengerRequest);
@@ -87,6 +88,8 @@ class PassengerServiceTest {
         // Then
         assertNotNull(result);
         assertEquals("john.doe@example.com", result.getEmail());
+        assertEquals("John", result.getFirstName());
+        assertEquals("Doe", result.getLastName());
         verify(passengerRepository).existsByEmail("john.doe@example.com");
         verify(passengerRepository).existsByPassportNumber("P123456");
         verify(passengerRepository).save(any(Passenger.class));
@@ -128,13 +131,14 @@ class PassengerServiceTest {
     void testGetPassengerById_Success() {
         // Given
         when(passengerRepository.findById(1L)).thenReturn(Optional.of(passenger));
-        when(modelMapper.map(any(Passenger.class), eq(PassengerResponseDto.class))).thenReturn(passengerResponse);
 
         // When
         PassengerResponseDto result = passengerService.getPassengerById(1L);
 
         // Then
         assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals("john.doe@example.com", result.getEmail());
         verify(passengerRepository).findById(1L);
     }
 
@@ -155,13 +159,13 @@ class PassengerServiceTest {
     void testGetPassengerByEmail_Success() {
         // Given
         when(passengerRepository.findByEmail(anyString())).thenReturn(Optional.of(passenger));
-        when(modelMapper.map(any(Passenger.class), eq(PassengerResponseDto.class))).thenReturn(passengerResponse);
 
         // When
         PassengerResponseDto result = passengerService.getPassengerByEmail("john.doe@example.com");
 
         // Then
         assertNotNull(result);
+        assertEquals("john.doe@example.com", result.getEmail());
         verify(passengerRepository).findByEmail("john.doe@example.com");
     }
 
@@ -183,16 +187,12 @@ class PassengerServiceTest {
         // Given
         Passenger passenger2 = new Passenger();
         passenger2.setId(2L);
+        passenger2.setFirstName("Jane");
+        passenger2.setLastName("Doe");
         passenger2.setEmail("jane.doe@example.com");
-
-        PassengerResponseDto response2 = new PassengerResponseDto();
-        response2.setId(2L);
-        response2.setEmail("jane.doe@example.com");
 
         List<Passenger> passengers = Arrays.asList(passenger, passenger2);
         when(passengerRepository.findAll()).thenReturn(passengers);
-        when(modelMapper.map(passenger, PassengerResponseDto.class)).thenReturn(passengerResponse);
-        when(modelMapper.map(passenger2, PassengerResponseDto.class)).thenReturn(response2);
 
         // When
         List<PassengerResponseDto> result = passengerService.getAllPassengers();
@@ -200,6 +200,8 @@ class PassengerServiceTest {
         // Then
         assertNotNull(result);
         assertEquals(2, result.size());
+        assertEquals("john.doe@example.com", result.get(0).getEmail());
+        assertEquals("jane.doe@example.com", result.get(1).getEmail());
         verify(passengerRepository).findAll();
     }
 
@@ -212,18 +214,23 @@ class PassengerServiceTest {
         updateRequest.setLastName("Doe");
         updateRequest.setEmail("john.doe@example.com"); // Same email
         updateRequest.setPhoneNumber("9876543210");
+        updateRequest.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        updateRequest.setPassportNumber("P123456");
+        updateRequest.setNationality("USA");
 
         when(passengerRepository.findById(1L)).thenReturn(Optional.of(passenger));
-        when(passengerRepository.existsByEmail(anyString())).thenReturn(false);
-        when(passengerRepository.save(any(Passenger.class))).thenReturn(passenger);
-        doNothing().when(modelMapper).map(any(PassengerRequestDto.class), any(Passenger.class));
-        when(modelMapper.map(any(Passenger.class), eq(PassengerResponseDto.class))).thenReturn(passengerResponse);
+        when(passengerRepository.save(any(Passenger.class))).thenAnswer(invocation -> {
+            Passenger savedPassenger = invocation.getArgument(0);
+            return savedPassenger;
+        });
 
         // When
         PassengerResponseDto result = passengerService.updatePassenger(1L, updateRequest);
 
         // Then
         assertNotNull(result);
+        assertEquals("Jane", result.getFirstName());
+        assertEquals("9876543210", result.getPhoneNumber());
         verify(passengerRepository).findById(1L);
         verify(passengerRepository).save(any(Passenger.class));
     }
@@ -263,14 +270,15 @@ class PassengerServiceTest {
     @DisplayName("Should throw exception when deleting non-existent passenger")
     void testDeletePassenger_NotFound() {
         // Given
-        when(passengerRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(passengerRepository.existsById(1L)).thenReturn(false);
 
         // When & Then
         assertThrows(ResourceNotFoundException.class, () -> {
             passengerService.deletePassenger(1L);
         });
 
-        verify(passengerRepository, never()).delete(any(Passenger.class));
+        verify(passengerRepository).existsById(1L);
+        verify(passengerRepository, never()).deleteById(anyLong());
     }
 }
 

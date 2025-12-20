@@ -2,6 +2,26 @@
 
 This directory contains comprehensive unit tests for the Airline Reservation System.
 
+## Java Version Requirement
+
+**IMPORTANT**: Tests require **Java 21** to run. The project is configured for Java 21, and Mockito/ByteBuddy (used for mocking) currently supports up to Java 22.
+
+If you have multiple JDKs installed:
+1. Set `JAVA_HOME` to point to Java 21 before running tests
+2. Verify Java version: `java -version` (should show version 21)
+
+Example on Windows (PowerShell):
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Java\jdk-21"
+mvn test
+```
+
+Example on Linux/Mac:
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+mvn test
+```
+
 ## Test Structure
 
 ```

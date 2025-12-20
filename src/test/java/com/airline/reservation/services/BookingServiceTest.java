@@ -41,10 +41,10 @@ class BookingServiceTest {
     @Mock
     private SeatRepository seatRepository;
 
-    @Mock
+    // ModelMapper is no longer mocked, using a real instance
     private ModelMapper modelMapper;
 
-    @InjectMocks
+    // @InjectMocks is removed as we are manually creating the service
     private BookingService bookingService;
 
     private BookingRequestDto bookingRequest;
@@ -56,6 +56,12 @@ class BookingServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Use real ModelMapper instead of mocking (avoids Java 24 compatibility issues)
+        modelMapper = new ModelMapper();
+
+        // Since @InjectMocks won't work with a real instance, we'll create the service manually
+        bookingService = new BookingService(bookingRepository, passengerRepository, flightRepository, seatRepository, modelMapper);
+
         // Setup airports
         departureAirport = new Airport();
         departureAirport.setId(1L);
@@ -300,16 +306,6 @@ class BookingServiceTest {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(seatRepository.save(any(Seat.class))).thenReturn(seat);
         when(bookingRepository.save(any(Booking.class))).thenReturn(booking);
-        
-        // Mock modelMapper for convertToResponseDto
-        com.airline.reservation.dtos.PassengerResponseDto passengerDto = new com.airline.reservation.dtos.PassengerResponseDto();
-        com.airline.reservation.dtos.SeatResponseDto seatDto = new com.airline.reservation.dtos.SeatResponseDto();
-        com.airline.reservation.dtos.AirportResponseDto airportDto = new com.airline.reservation.dtos.AirportResponseDto();
-        
-        when(modelMapper.map(eq(passenger), eq(com.airline.reservation.dtos.PassengerResponseDto.class))).thenReturn(passengerDto);
-        when(modelMapper.map(eq(seat), eq(com.airline.reservation.dtos.SeatResponseDto.class))).thenReturn(seatDto);
-        when(modelMapper.map(eq(departureAirport), eq(com.airline.reservation.dtos.AirportResponseDto.class))).thenReturn(airportDto);
-        when(modelMapper.map(eq(arrivalAirport), eq(com.airline.reservation.dtos.AirportResponseDto.class))).thenReturn(airportDto);
 
         // When
         BookingResponseDto result = bookingService.confirmBooking(1L);

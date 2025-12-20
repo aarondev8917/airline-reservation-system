@@ -43,10 +43,10 @@ class FlightServiceTest {
     @Mock
     private SeatRepository seatRepository;
 
-    @Mock
+    // ModelMapper is no longer mocked, using a real instance
     private ModelMapper modelMapper;
 
-    @InjectMocks
+    // @InjectMocks is removed as we are manually creating the service
     private FlightService flightService;
 
     private FlightRequestDto flightRequest;
@@ -56,6 +56,12 @@ class FlightServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Use real ModelMapper instead of mocking (avoids Java 24 compatibility issues)
+        modelMapper = new ModelMapper();
+
+        // Since @InjectMocks won't work with a real instance, we'll create the service manually
+        flightService = new FlightService(flightRepository, airportRepository, seatRepository, modelMapper);
+
         departureAirport = new Airport();
         departureAirport.setId(1L);
         departureAirport.setCode("JFK");
