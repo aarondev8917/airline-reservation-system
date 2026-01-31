@@ -44,7 +44,7 @@ public class SecurityConfig {
 
                         // Public read-only endpoints
                         .requestMatchers(HttpMethod.GET, "/api/flights/**", "/api/airports/**", "/api/seats/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/flights/search").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/flights/search", "/api/flights/search-unified").permitAll()
 
                         // Admin-only mutations for flights/airports
                         .requestMatchers(HttpMethod.POST, "/api/flights/**", "/api/airports/**").hasRole("ADMIN")

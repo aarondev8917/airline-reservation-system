@@ -1,6 +1,7 @@
 package com.airline.reservation.services;
 
 import com.airline.reservation.dtos.AirportResponseDto;
+import com.airline.reservation.dtos.ExternalFlightDto;
 import com.airline.reservation.dtos.FlightRequestDto;
 import com.airline.reservation.dtos.FlightResponseDto;
 import com.airline.reservation.dtos.FlightSearchRequestDto;
@@ -18,6 +19,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -170,6 +172,71 @@ public class FlightService {
             throw new ResourceNotFoundException("Flight", id);
         }
         flightRepository.deleteById(id);
+    }
+
+    /**
+     * Import an external (Aviationstack) flight into the internal system.
+     * Creates placeholder airports by IATA if they don't exist, then creates the flight and seats.
+     * The resulting flight can be used for booking like any internal flight.
+     */
+    @Transactional
+    public FlightResponseDto importExternalFlight(ExternalFlightDto external) {
+        if (external.getFlightNumber() == null || external.getFlightNumber().isBlank()) {
+            throw new InvalidBookingException("External flight number is required");
+        }
+        if (flightRepository.findByFlightNumber(external.getFlightNumber()).isPresent()) {
+            throw new ResourceAlreadyExistsException("Flight", "flightNumber", external.getFlightNumber());
+        }
+
+        String depCode = external.getOrigin() != null ? external.getOrigin().trim().toUpperCase() : "XXX";
+        String arrCode = external.getDestination() != null ? external.getDestination().trim().toUpperCase() : "YYY";
+        if (depCode.equals(arrCode)) {
+            throw new InvalidBookingException("Departure and arrival airports cannot be the same");
+        }
+
+        Airport dep = getOrCreateAirportByCode(depCode, "Airport " + depCode);
+        Airport arr = getOrCreateAirportByCode(arrCode, "Airport " + arrCode);
+
+        LocalDateTime depTime = external.getDepartureTime() != null
+                ? external.getDepartureTime()
+                : LocalDate.now().atTime(10, 0);
+        LocalDateTime arrTime = external.getArrivalTime() != null
+                ? external.getArrivalTime()
+                : depTime.plusHours(2);
+        if (arrTime.isBefore(depTime) || arrTime.equals(depTime)) {
+            arrTime = depTime.plusHours(2);
+        }
+
+        double price = external.getPrice() != null && external.getPrice() > 0 ? external.getPrice() : 199.99;
+        int totalSeats = 120;
+
+        Flight flight = new Flight();
+        flight.setFlightNumber(external.getFlightNumber());
+        flight.setAirlineName(external.getAirline() != null ? external.getAirline() : "Unknown");
+        flight.setDepartureAirport(dep);
+        flight.setArrivalAirport(arr);
+        flight.setDepartureTime(depTime);
+        flight.setArrivalTime(arrTime);
+        flight.setTotalSeats(totalSeats);
+        flight.setAvailableSeats(totalSeats);
+        flight.setBasePrice(price);
+        flight.setStatus(Flight.FlightStatus.SCHEDULED);
+
+        Flight saved = flightRepository.save(flight);
+        createSeatsForFlight(saved);
+        return convertToResponseDto(saved);
+    }
+
+    private Airport getOrCreateAirportByCode(String code, String name) {
+        return airportRepository.findByCode(code)
+                .orElseGet(() -> {
+                    Airport a = new Airport();
+                    a.setCode(code);
+                    a.setName(name);
+                    a.setCity("-");
+                    a.setCountry("-");
+                    return airportRepository.save(a);
+                });
     }
     
     private FlightResponseDto convertToResponseDto(Flight flight) {

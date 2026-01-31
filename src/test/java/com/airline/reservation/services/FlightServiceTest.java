@@ -1,5 +1,6 @@
 package com.airline.reservation.services;
 
+import com.airline.reservation.dtos.ExternalFlightDto;
 import com.airline.reservation.dtos.FlightRequestDto;
 import com.airline.reservation.dtos.FlightResponseDto;
 import com.airline.reservation.exceptions.InvalidBookingException;
@@ -27,7 +28,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -237,6 +240,84 @@ class FlightServiceTest {
         Flight capturedFlight = flightCaptor.getValue();
         assertEquals(150, capturedFlight.getAvailableSeats());
         assertEquals(150, capturedFlight.getTotalSeats());
+    }
+
+    // --- importExternalFlight ---
+
+    @Test
+    @DisplayName("importExternalFlight creates flight and seats when airports exist")
+    void importExternalFlight_success_existingAirports() {
+        ExternalFlightDto ext = new ExternalFlightDto();
+        ext.setId("BA501");
+        ext.setFlightNumber("BA501");
+        ext.setAirline("British Airways");
+        ext.setOrigin("JFK");
+        ext.setDestination("LAX");
+        ext.setPrice(599.99);
+
+        when(flightRepository.findByFlightNumber("BA501")).thenReturn(Optional.empty());
+        when(airportRepository.findByCode("JFK")).thenReturn(Optional.of(departureAirport));
+        when(airportRepository.findByCode("LAX")).thenReturn(Optional.of(arrivalAirport));
+        when(flightRepository.save(any(Flight.class))).thenAnswer(inv -> {
+            Flight f = inv.getArgument(0);
+            f.setId(100L);
+            return f;
+        });
+        when(seatRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
+
+        FlightResponseDto result = flightService.importExternalFlight(ext);
+
+        assertNotNull(result);
+        verify(flightRepository).findByFlightNumber("BA501");
+        verify(flightRepository).save(any(Flight.class));
+        verify(seatRepository).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("importExternalFlight throws when flight number already exists")
+    void importExternalFlight_duplicate_throws() {
+        ExternalFlightDto ext = new ExternalFlightDto();
+        ext.setFlightNumber("AA101");
+        ext.setOrigin("JFK");
+        ext.setDestination("LAX");
+
+        when(flightRepository.findByFlightNumber("AA101")).thenReturn(Optional.of(savedFlight));
+
+        assertThrows(ResourceAlreadyExistsException.class, () ->
+                flightService.importExternalFlight(ext));
+
+        verify(flightRepository).findByFlightNumber("AA101");
+        verify(flightRepository, never()).save(any(Flight.class));
+    }
+
+    @Test
+    @DisplayName("importExternalFlight throws when flight number blank")
+    void importExternalFlight_missingFlightNumber_throws() {
+        ExternalFlightDto ext = new ExternalFlightDto();
+        ext.setFlightNumber("");
+        ext.setOrigin("JFK");
+        ext.setDestination("LAX");
+
+        assertThrows(InvalidBookingException.class, () ->
+                flightService.importExternalFlight(ext));
+
+        verify(flightRepository, never()).save(any(Flight.class));
+    }
+
+    @Test
+    @DisplayName("importExternalFlight throws when origin equals destination")
+    void importExternalFlight_sameRoute_throws() {
+        ExternalFlightDto ext = new ExternalFlightDto();
+        ext.setFlightNumber("XX1");
+        ext.setOrigin("JFK");
+        ext.setDestination("JFK");
+
+        when(flightRepository.findByFlightNumber("XX1")).thenReturn(Optional.empty());
+
+        assertThrows(InvalidBookingException.class, () ->
+                flightService.importExternalFlight(ext));
+
+        verify(flightRepository, never()).save(any(Flight.class));
     }
 }
 
