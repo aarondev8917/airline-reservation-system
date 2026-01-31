@@ -6,8 +6,11 @@ import com.airline.reservation.exceptions.ResourceAlreadyExistsException;
 import com.airline.reservation.exceptions.ResourceNotFoundException;
 import com.airline.reservation.models.Airport;
 import com.airline.reservation.repositories.AirportRepository;
+import com.airline.reservation.configs.CacheConfig;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +28,7 @@ public class AirportService {
     private final ModelMapper modelMapper;
     
     @Transactional
+    @CacheEvict(cacheNames = CacheConfig.CACHE_AIRPORTS, allEntries = true)
     public AirportResponseDto createAirport(AirportRequestDto requestDto) {
         // Check if airport code already exists
         if (airportRepository.existsByCode(requestDto.getCode().toUpperCase())) {
@@ -39,6 +43,7 @@ public class AirportService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_AIRPORTS, key = "#id")
     public AirportResponseDto getAirportById(Long id) {
         Airport airport = airportRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Airport", id));
@@ -47,6 +52,7 @@ public class AirportService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_AIRPORTS, key = "'code:' + #code.toUpperCase()")
     public AirportResponseDto getAirportByCode(String code) {
         Airport airport = airportRepository.findByCode(code.toUpperCase())
                 .orElseThrow(() -> new ResourceNotFoundException("Airport", "code", code));
@@ -55,6 +61,7 @@ public class AirportService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_AIRPORTS, key = "'all'")
     public List<AirportResponseDto> getAllAirports() {
         return airportRepository.findAll().stream()
                 .map(airport -> modelMapper.map(airport, AirportResponseDto.class))
@@ -62,6 +69,7 @@ public class AirportService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_AIRPORTS, key = "'city:' + #city")
     public List<AirportResponseDto> getAirportsByCity(String city) {
         return airportRepository.findByCity(city).stream()
                 .map(airport -> modelMapper.map(airport, AirportResponseDto.class))
@@ -69,6 +77,7 @@ public class AirportService {
     }
     
     @Transactional
+    @CacheEvict(cacheNames = CacheConfig.CACHE_AIRPORTS, allEntries = true)
     public AirportResponseDto updateAirport(Long id, AirportRequestDto requestDto) {
         Airport airport = airportRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Airport", id));
@@ -81,6 +90,7 @@ public class AirportService {
     }
     
     @Transactional
+    @CacheEvict(cacheNames = CacheConfig.CACHE_AIRPORTS, allEntries = true)
     public void deleteAirport(Long id) {
         if (!airportRepository.existsById(id)) {
             throw new ResourceNotFoundException("Airport", id);

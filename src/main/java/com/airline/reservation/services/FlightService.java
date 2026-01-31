@@ -14,8 +14,11 @@ import com.airline.reservation.models.Seat;
 import com.airline.reservation.repositories.AirportRepository;
 import com.airline.reservation.repositories.FlightRepository;
 import com.airline.reservation.repositories.SeatRepository;
+import com.airline.reservation.configs.CacheConfig;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,7 @@ public class FlightService {
     private final ModelMapper modelMapper;
     
     @Transactional
+    @CacheEvict(cacheNames = {CacheConfig.CACHE_FLIGHTS, CacheConfig.CACHE_SEATS}, allEntries = true)
     public FlightResponseDto createFlight(FlightRequestDto requestDto) {
         // Check if flight number already exists
         if (flightRepository.findByFlightNumber(requestDto.getFlightNumber()).isPresent()) {
@@ -116,6 +120,7 @@ public class FlightService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_FLIGHTS, key = "#id")
     public FlightResponseDto getFlightById(Long id) {
         Flight flight = flightRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Flight", id));
@@ -124,6 +129,7 @@ public class FlightService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_FLIGHTS, key = "'number:' + #flightNumber")
     public FlightResponseDto getFlightByFlightNumber(String flightNumber) {
         Flight flight = flightRepository.findByFlightNumber(flightNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Flight", "flightNumber", flightNumber));
@@ -132,6 +138,7 @@ public class FlightService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_FLIGHTS, key = "#searchDto.departureAirportCode + '-' + #searchDto.arrivalAirportCode + '-' + #searchDto.departureDate")
     public List<FlightResponseDto> searchFlights(FlightSearchRequestDto searchDto) {
         LocalDateTime startOfDay = searchDto.getDepartureDate().atStartOfDay();
         LocalDateTime endOfDay = searchDto.getDepartureDate().atTime(23, 59, 59);
@@ -149,6 +156,7 @@ public class FlightService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_FLIGHTS, key = "'all'")
     public List<FlightResponseDto> getAllFlights() {
         return flightRepository.findAll().stream()
                 .map(this::convertToResponseDto)
@@ -156,6 +164,7 @@ public class FlightService {
     }
     
     @Transactional
+    @CacheEvict(cacheNames = CacheConfig.CACHE_FLIGHTS, allEntries = true)
     public FlightResponseDto updateFlightStatus(Long id, String status) {
         Flight flight = flightRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Flight", id));
@@ -167,6 +176,7 @@ public class FlightService {
     }
     
     @Transactional
+    @CacheEvict(cacheNames = {CacheConfig.CACHE_FLIGHTS, CacheConfig.CACHE_SEATS}, allEntries = true)
     public void deleteFlight(Long id) {
         if (!flightRepository.existsById(id)) {
             throw new ResourceNotFoundException("Flight", id);
@@ -180,6 +190,7 @@ public class FlightService {
      * The resulting flight can be used for booking like any internal flight.
      */
     @Transactional
+    @CacheEvict(cacheNames = {CacheConfig.CACHE_FLIGHTS, CacheConfig.CACHE_SEATS, CacheConfig.CACHE_AIRPORTS}, allEntries = true)
     public FlightResponseDto importExternalFlight(ExternalFlightDto external) {
         if (external.getFlightNumber() == null || external.getFlightNumber().isBlank()) {
             throw new InvalidBookingException("External flight number is required");

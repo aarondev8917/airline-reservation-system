@@ -3,9 +3,11 @@ package com.airline.reservation.services;
 import com.airline.reservation.dtos.AviationstackMapper;
 import com.airline.reservation.dtos.AviationstackResponseDto;
 import com.airline.reservation.dtos.ExternalFlightDto;
+import com.airline.reservation.configs.CacheConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
@@ -46,6 +48,7 @@ public class ExternalFlightApiService {
     /**
      * Fetch all flights from Aviationstack API or return mock data.
      */
+    @Cacheable(cacheNames = CacheConfig.CACHE_EXTERNAL_FLIGHTS, key = "'all'")
     public List<ExternalFlightDto> fetchAllExternalFlights() {
         if (useMock || apiKey == null || apiKey.isEmpty()) {
             log.info("Using mock flight data (use-mock=true or no API key configured)");
@@ -89,6 +92,7 @@ public class ExternalFlightApiService {
     /**
      * Fetch flights by flight number from Aviationstack API or return mock data.
      */
+    @Cacheable(cacheNames = CacheConfig.CACHE_EXTERNAL_FLIGHTS, key = "'number:' + #flightNumber")
     public List<ExternalFlightDto> fetchFlightsByFlightNumber(String flightNumber) {
         if (useMock || apiKey == null || apiKey.isEmpty()) {
             log.info("Using mock flight data for flight number: {}", flightNumber);
@@ -135,6 +139,7 @@ public class ExternalFlightApiService {
      * Fetch flights by route (departure and arrival IATA codes) from Aviationstack API.
      * Used for unified search with internal flights.
      */
+    @Cacheable(cacheNames = CacheConfig.CACHE_EXTERNAL_FLIGHTS, key = "'route:' + #depIata + '-' + #arrIata")
     public List<ExternalFlightDto> fetchFlightsByRoute(String depIata, String arrIata) {
         if (useMock || apiKey == null || apiKey.isEmpty()) {
             log.info("Using mock flight data for route {} -> {}", depIata, arrIata);
@@ -187,6 +192,7 @@ public class ExternalFlightApiService {
      * Fetch a single flight from Aviationstack API by flight number or return mock data.
      * Note: Aviationstack doesn't have a direct "by ID" endpoint, so we use flight number.
      */
+    @Cacheable(cacheNames = CacheConfig.CACHE_EXTERNAL_FLIGHTS, key = "'id:' + #id")
     public ExternalFlightDto fetchExternalFlightById(String id) {
         List<ExternalFlightDto> flights = fetchFlightsByFlightNumber(id);
         if (!flights.isEmpty()) {

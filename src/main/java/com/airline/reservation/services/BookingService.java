@@ -6,8 +6,10 @@ import com.airline.reservation.exceptions.ResourceNotFoundException;
 import com.airline.reservation.exceptions.SeatNotAvailableException;
 import com.airline.reservation.models.*;
 import com.airline.reservation.repositories.*;
+import com.airline.reservation.configs.CacheConfig;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,7 @@ public class BookingService {
     private final ModelMapper modelMapper;
     
     @Transactional
+    @CacheEvict(cacheNames = {CacheConfig.CACHE_SEATS, CacheConfig.CACHE_FLIGHTS}, allEntries = true)
     public BookingResponseDto createBooking(BookingRequestDto requestDto) {
         // Validate passenger
         Passenger passenger = passengerRepository.findById(requestDto.getPassengerId())
@@ -118,6 +121,7 @@ public class BookingService {
     }
     
     @Transactional
+    @CacheEvict(cacheNames = {CacheConfig.CACHE_SEATS, CacheConfig.CACHE_FLIGHTS}, allEntries = true)
     public BookingResponseDto confirmBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));
@@ -139,6 +143,7 @@ public class BookingService {
     }
     
     @Transactional
+    @CacheEvict(cacheNames = {CacheConfig.CACHE_SEATS, CacheConfig.CACHE_FLIGHTS}, allEntries = true)
     public void cancelBooking(Long id) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking", id));

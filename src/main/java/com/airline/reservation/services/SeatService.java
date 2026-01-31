@@ -6,8 +6,10 @@ import com.airline.reservation.models.Flight;
 import com.airline.reservation.models.Seat;
 import com.airline.reservation.repositories.FlightRepository;
 import com.airline.reservation.repositories.SeatRepository;
+import com.airline.reservation.configs.CacheConfig;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class SeatService {
     private final ModelMapper modelMapper;
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_SEATS, key = "'flight:' + #flightId")
     public List<SeatResponseDto> getSeatsByFlightId(Long flightId) {
         Flight flight = flightRepository.findById(flightId)
                 .orElseThrow(() -> new ResourceNotFoundException("Flight", flightId));
@@ -36,6 +39,7 @@ public class SeatService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_SEATS, key = "'available:' + #flightId")
     public List<SeatResponseDto> getAvailableSeatsByFlightId(Long flightId) {
         Flight flight = flightRepository.findById(flightId)
                 .orElseThrow(() -> new ResourceNotFoundException("Flight", flightId));
@@ -46,6 +50,7 @@ public class SeatService {
     }
     
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = CacheConfig.CACHE_SEATS, key = "#id")
     public SeatResponseDto getSeatById(Long id) {
         Seat seat = seatRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Seat", id));
