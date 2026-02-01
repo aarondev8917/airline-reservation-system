@@ -1,0 +1,30 @@
+# Build output
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed in image)
+*.md
+docs/
+
+# Local config (secrets - use env vars in Docker)
+application-local.properties
+
+# Test and dev artifacts
+*.log
+.DS_Store
+Thumbs.db
+
+# Postman / curl examples
+*.postman_collection.json
+CURL_*.md
