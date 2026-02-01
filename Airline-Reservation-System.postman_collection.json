@@ -1,0 +1,406 @@
+{
+  "info": {
+    "name": "Airline Reservation System",
+    "description": "All APIs for the Airline Reservation System. Set `baseUrl` (default http://localhost:8080) and `token` (JWT from login) in collection variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"newuser@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register"
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@airline.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Use admin@airline.com/admin123 or user@airline.com/user1234. Copy data.token to collection variable 'token' for protected requests."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Airports",
+      "item": [
+        {
+          "name": "Get All Airports",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/airports" }
+        },
+        {
+          "name": "Get Airport by ID",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/airports/1" }
+        },
+        {
+          "name": "Get Airport by Code",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/airports/code/JFK" }
+        },
+        {
+          "name": "Get Airports by City",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/airports/city/New York" }
+        },
+        {
+          "name": "Create Airport",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"DXB\",\n  \"name\": \"Dubai International Airport\",\n  \"city\": \"Dubai\",\n  \"country\": \"UAE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/airports"
+          }
+        },
+        {
+          "name": "Update Airport",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"JFK\",\n  \"name\": \"John F. Kennedy International Airport\",\n  \"city\": \"New York\",\n  \"country\": \"USA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/airports/1"
+          }
+        },
+        {
+          "name": "Delete Airport",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/airports/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Flights",
+      "item": [
+        {
+          "name": "Get All Flights",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/flights" }
+        },
+        {
+          "name": "Get Flight by ID",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/flights/1" }
+        },
+        {
+          "name": "Get Flight by Number",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/flights/number/AA101" }
+        },
+        {
+          "name": "Get External Flights",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/flights/external", "description": "Aviationstack / mock" }
+        },
+        {
+          "name": "Get External Flights by Number",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/flights/external/number/AA101" }
+        },
+        {
+          "name": "Get External Flight by ID",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/flights/external/AA101" }
+        },
+        {
+          "name": "Search Flights",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"departureAirportCode\": \"JFK\",\n  \"arrivalAirportCode\": \"LAX\",\n  \"departureDate\": \"2025-02-15\"\n}"
+            },
+            "url": "{{baseUrl}}/api/flights/search"
+          }
+        },
+        {
+          "name": "Search Unified (internal + external)",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"departureAirportCode\": \"JFK\",\n  \"arrivalAirportCode\": \"LAX\",\n  \"departureDate\": \"2025-02-15\"\n}"
+            },
+            "url": "{{baseUrl}}/api/flights/search-unified?includeExternal=true"
+          }
+        },
+        {
+          "name": "Create Flight",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightNumber\": \"BA501\",\n  \"airlineName\": \"British Airways\",\n  \"departureAirportId\": 1,\n  \"arrivalAirportId\": 2,\n  \"departureTime\": \"2025-03-01T10:00:00\",\n  \"arrivalTime\": \"2025-03-01T18:00:00\",\n  \"totalSeats\": 200,\n  \"basePrice\": 599.99\n}"
+            },
+            "url": "{{baseUrl}}/api/flights"
+          }
+        },
+        {
+          "name": "Import from External",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"externalFlightId\": \"AA101\"\n}"
+            },
+            "url": "{{baseUrl}}/api/flights/import-from-external",
+            "description": "Admin only. Use externalFlightId or externalFlight body."
+          }
+        },
+        {
+          "name": "Update Flight Status",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/flights/1/status?status=DELAYED"
+          }
+        },
+        {
+          "name": "Delete Flight",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/flights/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Get All Bookings",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Get Booking by ID",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/bookings/1"
+          }
+        },
+        {
+          "name": "Get Booking by Reference",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/bookings/reference/BK12345678"
+          }
+        },
+        {
+          "name": "Get Bookings by Passenger",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/bookings/passenger/1"
+          }
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"passengerId\": 1,\n  \"flightId\": 1,\n  \"seatId\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/bookings"
+          }
+        },
+        {
+          "name": "Confirm Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/bookings/1/confirm"
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/bookings/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Passengers",
+      "item": [
+        {
+          "name": "Get All Passengers",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/passengers"
+          }
+        },
+        {
+          "name": "Get Passenger by ID",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/passengers/1"
+          }
+        },
+        {
+          "name": "Get Passenger by Email",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/passengers/email/john@example.com"
+          }
+        },
+        {
+          "name": "Create Passenger",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john@example.com\",\n  \"phoneNumber\": \"9876543210\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"passportNumber\": \"AB1234567\",\n  \"nationality\": \"USA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/passengers"
+          }
+        },
+        {
+          "name": "Update Passenger",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.updated@example.com\",\n  \"phoneNumber\": \"9876543210\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"passportNumber\": \"AB1234567\",\n  \"nationality\": \"USA\"\n}"
+            },
+            "url": "{{baseUrl}}/api/passengers/1"
+          }
+        },
+        {
+          "name": "Delete Passenger",
+          "request": {
+            "method": "DELETE",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/passengers/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/payments"
+          }
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/payments/1"
+          }
+        },
+        {
+          "name": "Get Payment by Transaction ID",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/payments/transaction/TXN123456"
+          }
+        },
+        {
+          "name": "Get Payment by Booking ID",
+          "request": {
+            "method": "GET",
+            "header": [ { "key": "Authorization", "value": "Bearer {{token}}" } ],
+            "url": "{{baseUrl}}/api/payments/booking/1"
+          }
+        },
+        {
+          "name": "Process Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": 1,\n  \"paymentMethod\": \"CREDIT_CARD\"\n}"
+            },
+            "url": "{{baseUrl}}/api/payments"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Seats",
+      "item": [
+        {
+          "name": "Get Seat by ID",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/seats/1" }
+        },
+        {
+          "name": "Get Seats by Flight",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/seats/flight/1" }
+        },
+        {
+          "name": "Get Available Seats by Flight",
+          "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/seats/flight/1/available" }
+        }
+      ]
+    }
+  ]
+}
